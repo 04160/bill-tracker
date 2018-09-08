@@ -110,9 +110,24 @@ func makeIntTotal(floatTotal float32) uint {
 }
 
 func postBill(c *gin.Context) {
-	floatTotal, err := strconv.ParseFloat(c.PostForm("total"), 32)
+	var billBinding struct {
+		Description string `form:"description" json:"description" binding:"required"`
+		Total       string `form:"total" json:"total" binding:"required"`
+	}
+
+	if err := c.ShouldBind(&billBinding); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": err.Error()})
+		return
+	}
+
+	if len(billBinding.Description) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Missing description!"})
+		return
+	}
+
+	floatTotal, err := strconv.ParseFloat(billBinding.Total, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": fmt.Errorf("Something went wrong: %s", err)})
+		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": fmt.Errorf("Something went wrong: %s", err), "error": err})
 		return
 	}
 
@@ -120,6 +135,7 @@ func postBill(c *gin.Context) {
 
 	bill := billModel{Description: c.PostForm("description"), Total: total}
 	db.Save(&bill)
+
 	c.JSON(http.StatusCreated, gin.H{"status": http.StatusCreated, "message": "Bill added!", "billId": bill.ID})
 }
 
