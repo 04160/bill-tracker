@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -70,7 +72,16 @@ func getSingleBill(c *gin.Context) {
 }
 
 func postBill(c *gin.Context) {
+	floatTotal, err := strconv.ParseFloat(c.PostForm("total"), 64)
+	if err != nil {
+		// return error response
+	}
+	floatTotal *= 100
+	total := uint(floatTotal)
 
+	bill := billModel{Description: c.PostForm("description"), Total: total}
+	db.Save(&bill)
+	c.JSON(http.StatusCreated, gin.H{"status": http.StatusCreated, "message": "Bill added!", "billId": bill.ID})
 }
 
 func deleteBill(c *gin.Context) {
