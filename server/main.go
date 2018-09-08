@@ -32,6 +32,11 @@ type (
 		Description string  `json:"description"`
 		Total       float32 `json:"total"`
 	}
+	//TODO: use the binding for a function to seperate the from validator from the function
+	billBinding struct {
+		Description string `form:"description" json:"description" binding:"required"`
+		Total       string `form:"total" json:"total" binding:"required"`
+	}
 )
 
 func init() {
@@ -110,10 +115,7 @@ func makeIntTotal(floatTotal float32) uint {
 }
 
 func postBill(c *gin.Context) {
-	var billBinding struct {
-		Description string `form:"description" json:"description" binding:"required"`
-		Total       string `form:"total" json:"total" binding:"required"`
-	}
+	var billBinding billBinding
 
 	if err := c.ShouldBind(&billBinding); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": err.Error()})
@@ -150,19 +152,31 @@ func deleteBill(c *gin.Context) {
 }
 
 func updateBill(c *gin.Context) {
+	var billBinding billBinding
+
+	if err := c.ShouldBind(&billBinding); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": err.Error()})
+		return
+	}
+
+	if len(billBinding.Description) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Missing description!"})
+		return
+	}
+
 	bill, err := getSingleBillModel(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 	}
 
-	floatTotal, err := strconv.ParseFloat(c.PostForm("total"), 32)
+	floatTotal, err := strconv.ParseFloat(billBinding.Total, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": fmt.Errorf("Something went wrong: %s", err)})
 		return
 	}
 	total := makeIntTotal(float32(floatTotal))
 
-	bill.Description = c.Param("description")
+	bill.Description = billBinding.Description
 	bill.Total = total
 	db.Save(&bill)
 
