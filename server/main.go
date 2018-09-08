@@ -1,12 +1,15 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 )
+
+var db *gorm.DB
 
 const (
 	host   = "localhost"
@@ -15,23 +18,32 @@ const (
 	dbname = "bill_tracker"
 )
 
+type (
+	billModel struct {
+		gorm.Model
+		Description string `json:description`
+		Total       uint   `json:total`
+	}
+)
+
 func init() {
-	var psqlInfo string
-	psqlInfo = fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable",
+	var err error
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable",
 		host, port, user, dbname)
 
-	db, err := sql.Open("postgres", psqlInfo)
+	db, err = gorm.Open("postgres", psqlInfo)
+
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 
-	err = db.Ping()
+	err = db.DB().Ping()
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("Successfully connected!")
+	db.AutoMigrate(&billModel{})
 }
 
 func main() {
