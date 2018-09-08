@@ -23,8 +23,13 @@ const (
 type (
 	billModel struct {
 		gorm.Model
-		Description string `json:description`
-		Total       uint   `json:total`
+		Description string `json:"description"`
+		Total       uint   `json:"total"`
+	}
+	transformedBill struct {
+		ID          uint    `json:"id"`
+		Description string  `json:"description"`
+		Total       float32 `json:"total"`
 	}
 )
 
@@ -64,7 +69,22 @@ func main() {
 }
 
 func getBills(c *gin.Context) {
+	var bills []billModel
+	var _bills []transformedBill
 
+	db.Find(&bills)
+	if len(bills) <= 0 {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No bills found!"})
+		return
+	}
+
+	for _, item := range bills {
+		floatTotal := float32(item.Total)
+		floatTotal /= 100
+		_bills = append(_bills, transformedBill{ID: item.ID, Total: floatTotal, Description: item.Description})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _bills})
 }
 
 func getSingleBill(c *gin.Context) {
@@ -74,7 +94,8 @@ func getSingleBill(c *gin.Context) {
 func postBill(c *gin.Context) {
 	floatTotal, err := strconv.ParseFloat(c.PostForm("total"), 64)
 	if err != nil {
-		// return error response
+		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": fmt.Errorf("Something went wrong: %s", err)})
+		return
 	}
 	floatTotal *= 100
 	total := uint(floatTotal)
