@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -87,11 +88,8 @@ func getBills(c *gin.Context) {
 }
 
 func getSingleBill(c *gin.Context) {
-	var bill billModel
-	billId := c.Param("id")
-
-	db.First(&bill, billId)
-	if bill.ID == 0 {
+	bill, err := getSingleBillModel(c.Param("id"))
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No bill found!"})
 	}
 
@@ -126,11 +124,9 @@ func postBill(c *gin.Context) {
 }
 
 func deleteBill(c *gin.Context) {
-	var bill billModel
-	billId := c.Param("id")
-	db.First(&bill, billId)
-	if bill.ID == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No bill found!"})
+	bill, err := getSingleBillModel(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return
 	}
 	db.Delete(&bill)
@@ -138,5 +134,32 @@ func deleteBill(c *gin.Context) {
 }
 
 func updateBill(c *gin.Context) {
+	bill, err := getSingleBillModel(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+	}
 
+	floatTotal, err := strconv.ParseFloat(c.PostForm("total"), 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": fmt.Errorf("Something went wrong: %s", err)})
+		return
+	}
+	total := makeIntTotal(float32(floatTotal))
+
+	bill.Description = c.Param("description")
+	bill.Total = total
+	db.Save(&bill)
+
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Bill updated!"})
+}
+
+func getSingleBillModel(billId string) (billModel, error) {
+	var bill billModel
+	db.First(&bill, billId)
+
+	if bill.ID == 0 {
+		return bill, errors.New("No bill found!")
+	}
+
+	return bill, nil
 }
