@@ -79,8 +79,7 @@ func getBills(c *gin.Context) {
 	}
 
 	for _, item := range bills {
-		floatTotal := float32(item.Total)
-		floatTotal /= 100
+		floatTotal := makeFloatTotal(item.Total)
 		_bills = append(_bills, transformedBill{ID: item.ID, Total: floatTotal, Description: item.Description})
 	}
 
@@ -88,17 +87,38 @@ func getBills(c *gin.Context) {
 }
 
 func getSingleBill(c *gin.Context) {
+	var bill billModel
+	billId := c.Param("id")
 
+	db.First(&bill, billId)
+	if bill.ID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No bill found!"})
+	}
+
+	floatTotal := makeFloatTotal(bill.Total)
+
+	_bill := transformedBill{ID: bill.ID, Description: bill.Description, Total: floatTotal}
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _bill})
+}
+
+func makeFloatTotal(total uint) float32 {
+	floatTotal := float32(total)
+	return floatTotal / 100
+}
+
+func makeIntTotal(floatTotal float32) uint {
+	floatTotal *= 100
+	return uint(floatTotal)
 }
 
 func postBill(c *gin.Context) {
-	floatTotal, err := strconv.ParseFloat(c.PostForm("total"), 64)
+	floatTotal, err := strconv.ParseFloat(c.PostForm("total"), 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": fmt.Errorf("Something went wrong: %s", err)})
 		return
 	}
-	floatTotal *= 100
-	total := uint(floatTotal)
+
+	total := makeIntTotal(float32(floatTotal))
 
 	bill := billModel{Description: c.PostForm("description"), Total: total}
 	db.Save(&bill)
