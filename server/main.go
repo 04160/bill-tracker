@@ -126,7 +126,15 @@ func postBill(c *gin.Context) {
 }
 
 func deleteBill(c *gin.Context) {
-
+	var bill billModel
+	billId := c.Param("id")
+	db.First(&bill, billId)
+	if bill.ID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No bill found!"})
+		return
+	}
+	db.Delete(&bill)
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Bill deleted!"})
 }
 
 func updateBill(c *gin.Context) {
