@@ -44,7 +44,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
 
 	err = db.DB().Ping()
 	if err != nil {
@@ -91,6 +90,7 @@ func getSingleBill(c *gin.Context) {
 	bill, err := getSingleBillModel(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No bill found!"})
+		return
 	}
 
 	floatTotal := makeFloatTotal(bill.Total)
