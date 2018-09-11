@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
@@ -81,7 +82,7 @@ func getBills(c *gin.Context) {
 
 	db.Find(&bills)
 	if len(bills) <= 0 {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No bills found!"})
+		c.JSON(http.StatusNotFound, "No bills found!")
 		return
 	}
 
@@ -90,20 +91,20 @@ func getBills(c *gin.Context) {
 		_bills = append(_bills, transformedBill{ID: item.ID, Total: floatTotal, Description: item.Description})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _bills})
+	c.JSON(http.StatusOK, _bills)
 }
 
 func getSingleBill(c *gin.Context) {
 	bill, err := getSingleBillModel(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No bill found!"})
+		c.JSON(http.StatusNotFound, "No bill found!")
 		return
 	}
 
 	floatTotal := makeFloatTotal(bill.Total)
 
 	_bill := transformedBill{ID: bill.ID, Description: bill.Description, Total: floatTotal}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _bill})
+	c.JSON(http.StatusOK, _bill)
 }
 
 func makeFloatTotal(total uint) float32 {
@@ -119,19 +120,19 @@ func makeIntTotal(floatTotal float32) uint {
 func postBill(c *gin.Context) {
 	var billBinding billBinding
 
-	if err := c.ShouldBind(&billBinding); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": err.Error()})
+	if err := c.ShouldBindWith(&billBinding, binding.JSON); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if len(billBinding.Description) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Missing description!"})
+		c.JSON(http.StatusBadRequest, "Missing description!")
 		return
 	}
 
 	floatTotal, err := strconv.ParseFloat(billBinding.Total, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": fmt.Errorf("Something went wrong: %s", err), "error": err})
+		c.JSON(http.StatusBadRequest, fmt.Errorf("Something went wrong: %s", err))
 		return
 	}
 
@@ -140,40 +141,40 @@ func postBill(c *gin.Context) {
 	bill := billModel{Description: c.PostForm("description"), Total: total}
 	db.Save(&bill)
 
-	c.JSON(http.StatusCreated, gin.H{"status": http.StatusCreated, "message": "Bill added!", "billId": bill.ID})
+	c.JSON(http.StatusCreated, bill.ID)
 }
 
 func deleteBill(c *gin.Context) {
 	bill, err := getSingleBillModel(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+		c.JSON(http.StatusNotFound, err)
 		return
 	}
 	db.Delete(&bill)
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Bill deleted!"})
+	c.JSON(http.StatusOK, "Bill deleted!")
 }
 
 func updateBill(c *gin.Context) {
 	var billBinding billBinding
 
 	if err := c.ShouldBind(&billBinding); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": err.Error()})
+		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if len(billBinding.Description) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Missing description!"})
+		c.JSON(http.StatusBadRequest, "Missing description!")
 		return
 	}
 
 	bill, err := getSingleBillModel(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+		c.JSON(http.StatusNotFound, err)
 	}
 
 	floatTotal, err := strconv.ParseFloat(billBinding.Total, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": fmt.Errorf("Something went wrong: %s", err)})
+		c.JSON(http.StatusBadRequest, fmt.Errorf("Something went wrong: %s", err))
 		return
 	}
 	total := makeIntTotal(float32(floatTotal))
@@ -182,7 +183,7 @@ func updateBill(c *gin.Context) {
 	bill.Total = total
 	db.Save(&bill)
 
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Bill updated!"})
+	c.JSON(http.StatusOK, "Bill updated!")
 }
 
 func getSingleBillModel(billId string) (billModel, error) {
