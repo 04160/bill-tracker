@@ -25,7 +25,6 @@ class BillForm extends Component {
       total: this.state.total,
       description: this.state.description
     };
-
     this.props.createBill(bill);
   }
 
@@ -33,7 +32,7 @@ class BillForm extends Component {
     return (
       <div>
         <h1>Add Bill</h1>
-        <form onSubmit={this.onSubmit()}>
+        <form onSubmit={this.onSubmit}>
           <div>
             <label>Total: </label><br/>
             <input type="text" name="total" onChange={this.onChange} value={this.state.total}/>
