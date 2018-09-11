@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -60,6 +61,7 @@ func init() {
 
 func main() {
 	router := gin.Default()
+	router.Use(cors.Default())
 
 	v1 := router.Group("/api/v1/bills")
 	{
