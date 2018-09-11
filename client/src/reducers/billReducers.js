@@ -23,7 +23,7 @@ export default function (state = initialState, action) {
       console.log('CREATE_BILL');
       return {
         ...state,
-        items: action.payload
+        item: action.payload
       };
     case DELETE_BILL:
       console.log('DELETE_BILL');

@@ -27,8 +27,9 @@ export const getBills = () => dispatch => {
 };
 
 export const createBill = (billData) => dispatch => {
-  axios.post(api_base_url, {
-    body: billData
+  axios.post(api_base_url, billData, {
+    accept: 'application/json',
+    contentType: 'application/json',
   })
     .then((response) => dispatch({
       type: CREATE_BILL,

@@ -15,6 +15,7 @@ class BillList extends Component {
   }
 
   render () {
+    console.log(this.props.bills);
     const billItems = this.props.bills.map(bill => (
       <div key={ bill.id }>
         <h2>{ bill.total }</h2>
