@@ -138,10 +138,13 @@ func postBill(c *gin.Context) {
 
 	total := makeIntTotal(float32(floatTotal))
 
-	bill := billModel{Description: c.PostForm("description"), Total: total}
+	bill := billModel{Description: billBinding.Description, Total: total}
 	db.Save(&bill)
 
-	c.JSON(http.StatusCreated, bill.ID)
+	floatTotal2 := makeFloatTotal(bill.Total)
+	_bill := transformedBill{ID: bill.ID, Description: bill.Description, Total: floatTotal2}
+
+	c.JSON(http.StatusCreated, _bill)
 }
 
 func deleteBill(c *gin.Context) {
